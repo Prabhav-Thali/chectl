@@ -25,7 +25,7 @@
     "cli-ux": "^5.3.3",
     "command-exists": "^1.2.8",
     "debug": "^4.1.1",
-    "eclipse-che": "git://github.com/eclipse/che#7.9.0",
+    "eclipse-che": "git://github.com/linux-on-ibm-z/che#test",
     "eclipse-che-minishift": "git://github.com/minishift/minishift#master",
     "eclipse-che-operator": "git://github.com/eclipse/che-operator#7.9.0",
     "esprima": "^4.0.1",
