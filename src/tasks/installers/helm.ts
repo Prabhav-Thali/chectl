@@ -12,10 +12,10 @@ import { Command } from '@oclif/command'
 import * as commandExists from 'command-exists'
 import * as execa from 'execa'
 import * as fs from 'fs'
-import * as os from 'os'
 import { copy, mkdirp, remove } from 'fs-extra'
 import * as Listr from 'listr'
 import * as path from 'path'
+import * as os from 'os'
 
 import { CheHelper } from '../../api/che'
 import { KubeHelper } from '../../api/kube'
@@ -342,10 +342,10 @@ error: E_COMMAND_FAILED`)
     setOptions.push(`--set che.disableProbes=${flags.debug}`)
 
     let valuesFile
-    if ( os.arch() == 's390x' ) {
-       valuesFile = 'values_s390x.yaml'
+    if (os.arch() === 's390x') {
+      valuesFile = 'values_s390x.yaml'
     } else {
-       valuesFile = 'values.yaml'
+      valuesFile = 'values.yaml'
     }
 
     let command = `helm upgrade -f ${destDir}${valuesFile} --install che --force --namespace ${flags.chenamespace} ${setOptions.join(' ')} ${multiUserFlag} ${tlsFlag} ${destDir}`

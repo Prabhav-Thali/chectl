@@ -1680,7 +1680,7 @@ ecc-jsbn@~0.1.1:
 
 "eclipse-che@git://github.com/linux-on-ibm-z/che#test":
   version "0.0.0"
-  resolved "git://github.com/linux-on-ibm-z/che#777115ba081b22543ccb6c5ce7fd5ea89d87bf90"
+  resolved "git://github.com/linux-on-ibm-z/che#7a7d74ff1f09e6b926499ace5a775f3df2409e3d"
 
 editorconfig@^0.15.0:
   version "0.15.3"
