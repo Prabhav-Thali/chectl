@@ -17,7 +17,7 @@ import * as os from 'os'
 import * as path from 'path'
 
 import { cheDeployment, cheNamespace, listrRenderer } from '../../common-flags'
-import { DEFAULT_CHE_IMAGE, DEFAULT_CHE_OPERATOR_IMAGE } from '../../constants'
+import { DEFAULT_CHE_IMAGE, DEFAULT_CHE_IMAGE_Z, DEFAULT_CHE_OPERATOR_IMAGE, DEFAULT_CHE_OPERATOR_IMAGE_Z } from '../../constants'
 import { CheTasks } from '../../tasks/che'
 import { InstallerTasks } from '../../tasks/installers/installer'
 import { ApiTasks } from '../../tasks/platforms/api'
@@ -34,7 +34,7 @@ export default class Start extends Command {
     cheimage: string({
       char: 'i',
       description: 'Che server container image',
-      default: DEFAULT_CHE_IMAGE,
+      default: (os.arch() === 's390x' ? DEFAULT_CHE_IMAGE_Z : DEFAULT_CHE_IMAGE),
       env: 'CHE_CONTAINER_IMAGE'
     }),
     templates: string({
@@ -108,7 +108,7 @@ export default class Start extends Command {
     }),
     'che-operator-image': string({
       description: 'Container image of the operator. This parameter is used only when the installer is the operator',
-      default: DEFAULT_CHE_OPERATOR_IMAGE
+      default: (os.arch() === 's390x' ? DEFAULT_CHE_OPERATOR_IMAGE_Z : DEFAULT_CHE_OPERATOR_IMAGE)
     }),
     'che-operator-cr-yaml': string({
       description: 'Path to a yaml file that defines a CheCluster used by the operator. This parameter is used only when the installer is the operator.',
