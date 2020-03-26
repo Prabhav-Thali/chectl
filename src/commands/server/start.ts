@@ -148,7 +148,7 @@ export default class Start extends Command {
   }
 
   static getCheOperatorDefaultImage(): string {
-    // returns arch specific default operator image
+    // returns arch specific default che operator image
     if (os.arch() === 's390x') {
       return DEFAULT_CHE_OPERATOR_IMAGE_s390x
     }
