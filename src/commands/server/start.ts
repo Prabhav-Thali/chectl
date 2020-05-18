@@ -10,6 +10,7 @@
 
 import { Command, flags } from '@oclif/command'
 import { boolean, string } from '@oclif/parser/lib/flags'
+import { cli } from 'cli-ux'
 import * as fs from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as Listr from 'listr'
@@ -17,14 +18,16 @@ import * as notifier from 'node-notifier'
 import * as os from 'os'
 import * as path from 'path'
 
+import { KubeHelper } from '../../api/kube'
 import { cheDeployment, cheNamespace, listrRenderer, skipKubeHealthzCheck as skipK8sHealthCheck } from '../../common-flags'
 import { DEFAULT_CHE_IMAGE, DEFAULT_CHE_OPERATOR_IMAGE, DOCS_LINK_INSTALL_TLS_WITH_SELF_SIGNED_CERT } from '../../constants'
 import { CheTasks } from '../../tasks/che'
-import { getRetrieveKeycloakCredentialsTask, retrieveCheCaCertificateTask } from '../../tasks/installers/common-tasks'
+import { getPrintHighlightedMessagesTask, getRetrieveKeycloakCredentialsTask, retrieveCheCaCertificateTask } from '../../tasks/installers/common-tasks'
 import { InstallerTasks } from '../../tasks/installers/installer'
 import { ApiTasks } from '../../tasks/platforms/api'
+import { CommonPlatformTasks } from '../../tasks/platforms/common-platform-tasks'
 import { PlatformTasks } from '../../tasks/platforms/platform'
-import { isOpenshiftPlatformFamily, setDefaultInstaller } from '../../util'
+import { isOpenshiftPlatformFamily } from '../../util'
 
 export default class Start extends Command {
   static description = 'start Eclipse Che server'
@@ -192,7 +195,7 @@ export default class Start extends Command {
     flags.tls = await this.checkTlsMode(flags)
 
     if (!flags.installer) {
-      await setDefaultInstaller(flags)
+      await this.setDefaultInstaller(flags)
     }
 
     if (!flags.templates) {
@@ -220,21 +223,21 @@ export default class Start extends Command {
    * Returns true if TLS is enabled (or omitted) and false if it is explicitly disabled.
    */
   async checkTlsMode(flags: any): Promise<boolean> {
-    if (flags['che-operator-cr-yaml']) {
-      const cheOperatorCrYamlPath = flags['che-operator-cr-yaml']
-      if (fs.existsSync(cheOperatorCrYamlPath)) {
-        const cr = yaml.safeLoad(fs.readFileSync(cheOperatorCrYamlPath).toString())
-        if (cr && cr.spec && cr.spec.server && cr.spec.server.tlsSupport === false) {
-          return false
-        }
-      }
-    }
-
     if (flags['che-operator-cr-patch-yaml']) {
       const cheOperatorCrPatchYamlPath = flags['che-operator-cr-patch-yaml']
       if (fs.existsSync(cheOperatorCrPatchYamlPath)) {
         const crPatch = yaml.safeLoad(fs.readFileSync(cheOperatorCrPatchYamlPath).toString())
         if (crPatch && crPatch.spec && crPatch.spec.server && crPatch.spec.server.tlsSupport === false) {
+          return false
+        }
+      }
+    }
+
+    if (flags['che-operator-cr-yaml']) {
+      const cheOperatorCrYamlPath = flags['che-operator-cr-yaml']
+      if (fs.existsSync(cheOperatorCrYamlPath)) {
+        const cr = yaml.safeLoad(fs.readFileSync(cheOperatorCrYamlPath).toString())
+        if (cr && cr.spec && cr.spec.server && cr.spec.server.tlsSupport === false) {
           return false
         }
       }
@@ -331,6 +334,7 @@ export default class Start extends Command {
 
     // Platform Checks
     let platformCheckTasks = new Listr(platformTasks.preflightCheckTasks(flags, this), listrOptions)
+    platformCheckTasks.add(CommonPlatformTasks.oAuthProvidersExists(flags))
 
     // Checks if Eclipse Che is already deployed
     let preInstallTasks = new Listr(undefined, listrOptions)
@@ -356,20 +360,7 @@ export default class Start extends Command {
       },
       getRetrieveKeycloakCredentialsTask(flags),
       retrieveCheCaCertificateTask(flags),
-      {
-        title: 'Show important messages',
-        enabled: ctx => ctx.highlightedMessages.length > 0,
-        task: (ctx: any) => {
-          const printMessageTasks = new Listr([], ctx.listrOptions)
-          for (const message of ctx.highlightedMessages) {
-            printMessageTasks.add({
-              title: message,
-              task: () => { }
-            })
-          }
-          return printMessageTasks
-        }
-      }
+      getPrintHighlightedMessagesTask(),
     ], listrOptions)
 
     const logsTasks = new Listr([{
@@ -416,5 +407,20 @@ export default class Start extends Command {
     })
 
     this.exit(0)
+  }
+
+  /**
+   * Sets default installer which is `olm` for OpenShift 4 with stable version of chectl
+   * and `operator` for other cases.
+   */
+  async setDefaultInstaller(flags: any): Promise<void> {
+    const cheVersion = DEFAULT_CHE_OPERATOR_IMAGE.split(':')[1]
+    const kubeHelper = new KubeHelper(flags)
+    if (flags.platform === 'openshift' && await kubeHelper.isOpenShift4() && cheVersion !== 'nightly' && cheVersion !== 'latest') {
+      flags.installer = 'olm'
+    } else {
+      flags.installer = 'operator'
+      cli.info(`› Installer type is set to: '${flags.installer}'`)
+    }
   }
 }

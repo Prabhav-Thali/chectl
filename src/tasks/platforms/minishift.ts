@@ -53,7 +53,7 @@ export class MinishiftTasks {
         }
       },
       VersionHelper.getOpenShiftCheckVersionTask(flags),
-      VersionHelper.getK8sCheckVersionTask(flags)
+      VersionHelper.getK8sCheckVersionTask(flags),
     ], { renderer: flags['listr-renderer'] as any })
   }
 

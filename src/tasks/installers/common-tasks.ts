@@ -8,10 +8,11 @@
  * SPDX-License-Identifier: EPL-2.0
  **********************************************************************/
 
+import ansi = require('ansi-colors')
 import { cli } from 'cli-ux'
 import * as execa from 'execa'
 import { copy, mkdirp, remove } from 'fs-extra'
-import { ListrTask } from 'listr'
+import * as Listr from 'listr'
 import * as path from 'path'
 
 import { CheHelper } from '../../api/che'
@@ -19,7 +20,7 @@ import { KubeHelper } from '../../api/kube'
 import { CHE_CLUSTER_CR_NAME, DOCS_LINK_IMPORT_CA_CERT_INTO_BROWSER } from '../../constants'
 import { isKubernetesPlatformFamily, isOpenshiftPlatformFamily } from '../../util'
 
-export function createNamespaceTask(flags: any): ListrTask {
+export function createNamespaceTask(flags: any): Listr.ListrTask {
   return {
     title: `Create Namespace (${flags.chenamespace})`,
     task: async (_ctx: any, task: any) => {
@@ -38,7 +39,7 @@ export function createNamespaceTask(flags: any): ListrTask {
   }
 }
 
-export function copyOperatorResources(flags: any, cacheDir: string): ListrTask {
+export function copyOperatorResources(flags: any, cacheDir: string): Listr.ListrTask {
   return {
     title: 'Copying operator resources',
     task: async (ctx: any, task: any) => {
@@ -59,7 +60,7 @@ async function copyCheOperatorResources(templatesDir: string, cacheDir: string):
   return destDir
 }
 
-export function createEclipeCheCluster(flags: any, kube: KubeHelper): ListrTask {
+export function createEclipseCheCluster(flags: any, kube: KubeHelper): Listr.ListrTask {
   return {
     title: `Create Eclipse Che cluster ${CHE_CLUSTER_CR_NAME} in namespace ${flags.chenamespace}`,
     task: async (ctx: any, task: any) => {
@@ -77,7 +78,7 @@ export function createEclipeCheCluster(flags: any, kube: KubeHelper): ListrTask 
         ctx.isDevfileRegistryDeployed = !(flags['devfile-registry-url'] as boolean)
 
         const yamlFilePath = flags['che-operator-cr-yaml'] === '' ? ctx.resourcesPath + 'crds/org_v1_che_cr.yaml' : flags['che-operator-cr-yaml']
-        const cr = await kube.createCheClusterFromFile(yamlFilePath, flags, flags['che-operator-cr-yaml'] === '')
+        const cr = await kube.createCheClusterFromFile(yamlFilePath, flags, ctx, flags['che-operator-cr-yaml'] === '')
         ctx.cr = cr
         ctx.isKeycloakReady = ctx.isKeycloakReady || cr.spec.auth.externalIdentityProvider
         ctx.isPostgresReady = ctx.isPostgresReady || cr.spec.database.externalDb
@@ -98,7 +99,7 @@ export function createEclipeCheCluster(flags: any, kube: KubeHelper): ListrTask 
   }
 }
 
-export function checkTlsCertificate(flags: any): ListrTask {
+export function checkTlsCertificate(flags: any): Listr.ListrTask {
   return {
     title: 'Checking certificate',
     // It makes sense to check whether self-signed certificate is used only if TLS mode is on
@@ -132,7 +133,7 @@ export function checkTlsCertificate(flags: any): ListrTask {
   }
 }
 
-export function retrieveCheCaCertificateTask(flags: any): ListrTask {
+export function retrieveCheCaCertificateTask(flags: any): Listr.ListrTask {
   return {
     title: 'Retrieving Che self-signed CA certificate',
     // It makes sense to retrieve CA certificate only if self-signed certificate is used.
@@ -149,17 +150,15 @@ export function retrieveCheCaCertificateTask(flags: any): ListrTask {
 }
 
 export function getMessageImportCaCertIntoBrowser(caCertFileLocation: string): string {
-  const yellow = '\x1b[33m'
-  const noColor = '\x1b[0m'
-  const message = `❗${yellow}[MANUAL ACTION REQUIRED]${noColor} Please add Che self-signed CA certificate into your browser: ${caCertFileLocation}.\n` +
+  const message = `❗${ansi.yellow('[MANUAL ACTION REQUIRED]')} Please add Che self-signed CA certificate into your browser: ${caCertFileLocation}.\n` +
                   `Documentation how to add a CA certificate into a browser: ${DOCS_LINK_IMPORT_CA_CERT_INTO_BROWSER}`
   return message
 }
 
-export function getRetrieveKeycloakCredentialsTask(flags: any): ListrTask {
+export function getRetrieveKeycloakCredentialsTask(flags: any): Listr.ListrTask {
   return {
     title: 'Retrieving Keycloak admin credentials',
-    enabled: (ctx: any) => !ctx.cr.spec.auth.externalIdentityProvider && flags.multiuser && (flags.installer !== 'operator' || flags.installer !== 'olm'),
+    enabled: (ctx: any) => ctx.cr && !ctx.cr.spec.auth.externalIdentityProvider && flags.multiuser && (flags.installer !== 'operator' || flags.installer !== 'olm'),
     task: async (ctx: any, task: any) => {
       const che = new CheHelper(flags)
       const [login, password] = await che.retrieveKeycloakAdminCredentials(flags.chenamespace)
@@ -170,6 +169,27 @@ export function getRetrieveKeycloakCredentialsTask(flags: any): ListrTask {
       } else {
         task.title = `${task.title }... Failed.`
       }
+    }
+  }
+}
+
+/**
+ * Prints important to user messages which are stored in ctx.highlightedMessages
+ * Typically this task is the last task of a command.
+ */
+export function getPrintHighlightedMessagesTask(): Listr.ListrTask {
+  return {
+    title: 'Show important messages',
+    enabled: ctx => ctx.highlightedMessages && ctx.highlightedMessages.length > 0,
+    task: (ctx: any) => {
+      const printMessageTasks = new Listr([], ctx.listrOptions)
+      for (const message of ctx.highlightedMessages) {
+        printMessageTasks.add({
+          title: message,
+          task: () => { }
+        })
+      }
+      return printMessageTasks
     }
   }
 }

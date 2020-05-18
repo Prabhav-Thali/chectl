@@ -685,6 +685,10 @@ ajv@^6.5.5:
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
 
+ansi-colors@4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/ansi-colors/-/ansi-colors-4.1.1.tgz#cbb9ae256bf750af1eab344f229aa27fe94ba348"
+
 ansi-escapes@^3.0.0, ansi-escapes@^3.1.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/ansi-escapes/-/ansi-escapes-3.2.0.tgz#8780b98ff9dbf5638152d1f1fe5c1d7b4442976b"
@@ -1521,11 +1525,11 @@ ecc-jsbn@~0.1.1:
 
 "eclipse-che-operator@git://github.com/eclipse/che-operator#master":
   version "0.0.0"
-  resolved "git://github.com/eclipse/che-operator#daa8b582393a43b349a1678ad978e55e1241e94e"
+  resolved "git://github.com/eclipse/che-operator#8a4e1d5edfd26f74418c1fca03a590321418d429"
 
 "eclipse-che@git://github.com/eclipse/che#master":
   version "0.0.0"
-  resolved "git://github.com/eclipse/che#f3900600af44fae05270b729b6a0a83cc924ad4d"
+  resolved "git://github.com/eclipse/che#998c413ab70d20d67b5f0a4462d25b97e6812d7f"
 
 editorconfig@^0.15.0:
   version "0.15.3"
